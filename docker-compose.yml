@@ -1,0 +1,49 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: terry_shorts_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+      - DEBUG=False
+      - TARGET_VIDEOS_PER_DAY=10
+      - NICHE=Minecraft
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - YOUTUBE_CLIENT_ID=${YOUTUBE_CLIENT_ID:-}
+      - YOUTUBE_CLIENT_SECRET=${YOUTUBE_CLIENT_SECRET:-}
+      - YOUTUBE_REFRESH_TOKEN=${YOUTUBE_REFRESH_TOKEN:-}
+    volumes:
+      - ./backend/storage:/app/storage
+      - ./backend/data:/app/data
+      - ./backend/app:/app/app
+      - ./backend/main.py:/app/main.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - BACKEND_URL=http://backend:8000
+    container_name: terry_shorts_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  storage_data:
+  db_data:
